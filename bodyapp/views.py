@@ -1,13 +1,16 @@
 from django.shortcuts import render, HttpResponse
+from django.http import JsonResponse
 import json, urllib.request
+from django.views.decorators.csrf import csrf_exempt
 
 # Create your views here.
 
+@csrf_exempt
 def index(request):
     # return HttpResponse("Hello")
 
-    if request.method == 'POST':
-        city = request.POST['city']
+    if request.method == 'GET':
+        city = request.GET.get('city')
 
         weatherLoad = urllib.request.urlopen(
             'http://api.openweathermap.org/data/2.5/weather?q=' 
@@ -22,9 +25,9 @@ def index(request):
             "pressure": str(weatherDict['main']['pressure']), 
             "humidity": str(weatherDict['main']['humidity']), 
         }
-        print(weather)
     
     else:
         weather={}
 
-    return render(request, 'index.html', weather)
+    # return HttpResponse("Hello there!")
+    return JsonResponse(weather)
