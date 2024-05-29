@@ -1,3 +1,4 @@
+import timeit
 from django.shortcuts import render, HttpResponse
 from django.http import JsonResponse
 import json, urllib.request
@@ -8,6 +9,7 @@ from .models import CityRequest, WeatherResponse
 
 @csrf_exempt
 def index(request):
+    start = timeit.default_timer()
     if request.method == 'GET':
         city = request.GET.get('city')
         cityRequest = CityRequest(city = city)
@@ -41,4 +43,5 @@ def index(request):
         weather={}
 
     # return HttpResponse("Hello there!")
+    print("Time Taken : " ,timeit.default_timer() - start)
     return JsonResponse(weather)
