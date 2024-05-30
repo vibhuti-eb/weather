@@ -15,7 +15,7 @@ def index(request):
     start = timeit.default_timer()
 
     if request.method == 'GET':
-        city = request.GET.get('city')
+        city = request.GET.get('city', None)
 
         # Validating the input city name
         if Validator.cityParamValidator(city):
