@@ -1,4 +1,4 @@
-import timeit
+import timeit, re
 import urllib.parse
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseNotFound
@@ -15,7 +15,8 @@ def index(request):
     start = timeit.default_timer()
 
     if request.method == 'GET':
-        city = request.GET.get('city', None)
+        city = re.sub(' +', ' ', request.GET.get('city', None))
+        print("Cleaned up city name is", city)
 
         # Validating the input city name
         if Validator.cityParamValidator(city):
@@ -30,6 +31,8 @@ def index(request):
         weather = getWeather(city)
 
         if not weather:
+            #Stopping the timer
+            print("Time Taken : " ,timeit.default_timer() - start)
             return HttpResponseNotFound(JsonResponse({"message": "Sorry, the city doesn't exist in our system"}))
 
         #Saving response to DB
@@ -41,7 +44,7 @@ def index(request):
             pressure = weather.get("pressure"),
             humidity = weather.get("humidity")
         )
-        print(weatherResponse.longitude)
+
         weatherResponse.save()
     
     else:
@@ -54,9 +57,16 @@ def index(request):
 def getWeather(city):
     #Calling external endpoint
     try:
+        #Starting the Timer to see how much time the external API takes
+        start = timeit.default_timer()
+
         weatherLoad = urllib.request.urlopen(
             'http://api.openweathermap.org/data/2.5/weather?q=' 
                     + urllib.parse.quote(city) + '&appid=7a908ab52be0fcce27d79396efc4fcb4').read()
+        
+        #Stopping the timer
+        print("Time Taken by external API : " ,timeit.default_timer() - start)
+
         #Converting the JSON response to Python Dictionary
         weatherDict = json.loads(weatherLoad)
 
