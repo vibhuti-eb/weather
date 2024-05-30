@@ -1,7 +1,7 @@
 import timeit
 import urllib.parse
 from django.shortcuts import render
-from django.http import JsonResponse, HttpResponseBadRequest
+from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseNotFound
 import json, urllib.request
 from django.views.decorators.csrf import csrf_exempt
 from .models import CityRequest, WeatherResponse
@@ -26,11 +26,37 @@ def index(request):
         cityRequest = CityRequest(city = city)
         cityRequest.save()
 
-        #Calling external endpoint
+        #Getting Weather from OpenWeatherMap API
+        weather = getWeather(city)
+
+        if not weather:
+            return HttpResponseNotFound(JsonResponse({"message": "Sorry, the city doesn't exist in our system"}))
+
+        #Saving response to DB
+        weatherResponse = WeatherResponse(
+            cityRequest = cityRequest,
+            longitude = weather.get("longitude"),
+            latitude = weather.get("latitude"),
+            temperature = weather.get("temperature"),
+            pressure = weather.get("pressure"),
+            humidity = weather.get("humidity")
+        )
+        print(weatherResponse.longitude)
+        weatherResponse.save()
+    
+    else:
+        weather={}
+
+    #Stopping the timer
+    print("Time Taken : " ,timeit.default_timer() - start)
+    return JsonResponse(weather)
+
+def getWeather(city):
+    #Calling external endpoint
+    try:
         weatherLoad = urllib.request.urlopen(
             'http://api.openweathermap.org/data/2.5/weather?q=' 
                     + urllib.parse.quote(city) + '&appid=7a908ab52be0fcce27d79396efc4fcb4').read()
-        
         #Converting the JSON response to Python Dictionary
         weatherDict = json.loads(weatherLoad)
 
@@ -42,21 +68,6 @@ def index(request):
             "pressure": str(weatherDict['main']['pressure']), 
             "humidity": str(weatherDict['main']['humidity']), 
         }
-
-        #Saving response to DB
-        weatherResponse = WeatherResponse(
-            cityRequest = cityRequest,
-            longitude = weather.get("longitude"),
-            latitude = weather.get("latitude"),
-            temperature = weather.get("temperature"),
-            pressure = weather.get("pressure"),
-            humidity = weather.get("humidity")
-        )
-        weatherResponse.save()
-    
-    else:
-        weather={}
-
-    #Stopping the timer
-    print("Time Taken : " ,timeit.default_timer() - start)
-    return JsonResponse(weather)
+        return weather
+    except:
+        return {}
